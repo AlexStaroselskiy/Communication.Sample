@@ -18,7 +18,7 @@ public class UDPCommunicationChannel : ICommunicationChannel
         _port = 60000;
         _bufferSize = 8194;
         _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
-        _serverEndpoint = new IPEndPoint(IPAddress.Any, _port);
+        _serverEndpoint = new IPEndPoint(IPAddress.Loopback, _port);
         _socket.ReceiveBufferSize = _bufferSize;
     }
 

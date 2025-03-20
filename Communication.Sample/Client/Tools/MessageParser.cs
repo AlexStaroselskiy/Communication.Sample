@@ -1,4 +1,6 @@
-﻿namespace Communication.Sample.Client.Tools;
+﻿using Communication.Sample.Client.Enums;
+
+namespace Communication.Sample.Client.Tools;
 
 internal static class MessageParser
 {

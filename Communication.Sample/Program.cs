@@ -1,6 +1,7 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using Communication.Sample.Client;
+using Communication.Sample.Client.Enums;
 using Communication.Sample.Transport;
 using System.IO;
 

@@ -1,5 +1,4 @@
-﻿
-namespace Communication.Sample.Client
+﻿namespace Communication.Sample.Client.Exceptions
 {
     [Serializable]
     public class SdrException : Exception

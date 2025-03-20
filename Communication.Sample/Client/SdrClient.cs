@@ -1,4 +1,6 @@
-﻿using Communication.Sample.Client.Interface;
+﻿using Communication.Sample.Client.Enums;
+using Communication.Sample.Client.Exceptions;
+using Communication.Sample.Client.Interface;
 using Communication.Sample.Client.Tools;
 using Communication.Sample.Transport.Interface;
 using System;
@@ -91,8 +93,7 @@ public class SdrClient : ISdrClient
 
         return await Dispatch(sdrCommand, command, message =>
         {
-            //var length = message[1] & 0b00011111 | message[0];
-            //var dataLength = length - 4;
+      
             // 2 header + 2 command + 1 channel id +1 channelid
             var frequency1 = ParseFrequencyRange(new ArraySegment<byte>(message, 6, 15));
             var frequency2 = ParseFrequencyRange(new ArraySegment<byte>(message, 21, 15));
@@ -189,13 +190,14 @@ public class SdrClient : ISdrClient
         if (transferOption == TransferOption.Start)
         {
             // if we going to start the transfer we need to start the data channel processing
-            _dataChannelProcessingTask = Task.Run(async () =>
+            _dataChannelProcessingTask = Task.Factory.StartNew(action: () =>
             {
                 while (!cancellationToken.IsCancellationRequested)
                 {
-                    await ReceiveData(cancellationToken);
+                    ReceiveData(cancellationToken).Wait();
                 }
             }, cancellationToken);
+            
         }
         else
         {
@@ -289,6 +291,7 @@ public class SdrClient : ISdrClient
                 var data = MessageParser.GetCommandType(response);
                 if (data == sdrCommand)
                 {
+                    
                     return resultresolver(response);
                 }
 

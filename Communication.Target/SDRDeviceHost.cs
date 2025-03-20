@@ -23,18 +23,20 @@ public class SDRDeviceHost
     {
         _socket.Bind(new IPEndPoint(IPAddress.Any, _port));
         Console.WriteLine("UDP Server is running...");
+        _socket.Listen(10);
 
         while (true)
         {
-            if (!_socket.Connected) continue;
+            var socket =  _socket.Accept();
+            Console.WriteLine("Client Connected!");
             byte[] buffer = ArrayPool<byte>.Shared.Rent(_bufferSize);
             try
             {
                 var segment = new ArraySegment<byte>(buffer);
-                var result = await _socket.ReceiveAsync(segment, SocketFlags.None);
+                var result = await socket.ReceiveAsync(segment, SocketFlags.None);
 
                 // Process in a separate task (non-blocking)
-                _ = Task.Run(() => ProcessPacket(new ArraySegment<byte>(buffer).AsSpan()));
+                _ = Task.Run(() => ProcessPacket(socket, new ArraySegment<byte>(buffer).AsSpan()));
             }
             finally
             {
@@ -43,10 +45,10 @@ public class SDRDeviceHost
         }
     }
 
-    private void ProcessPacket(Span<byte> arraySegment)
+    private void ProcessPacket(Socket socket, Span<byte> arraySegment)
     {
         Console.WriteLine($"Received {arraySegment.Length} bytes");
-        _socket.Send(arraySegment);
+        socket.Send(arraySegment);
     }
 
     public void Stop()

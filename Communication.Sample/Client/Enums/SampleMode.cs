@@ -1,4 +1,4 @@
-﻿namespace Communication.Sample.Client;
+﻿namespace Communication.Sample.Client.Enums;
 
 public enum SampleMode : byte
 {

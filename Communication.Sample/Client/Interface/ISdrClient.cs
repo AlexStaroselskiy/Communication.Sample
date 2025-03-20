@@ -1,5 +1,7 @@
 ﻿
 
+using Communication.Sample.Client.Enums;
+
 namespace Communication.Sample.Client.Interface;
 
 public interface ISdrClient

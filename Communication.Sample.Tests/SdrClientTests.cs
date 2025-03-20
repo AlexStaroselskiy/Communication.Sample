@@ -3,6 +3,7 @@ using Communication.Sample.Client;
 using Moq;
 using Communication.Sample.Transport;
 using Communication.Sample.Transport.Interface;
+using Communication.Sample.Client.Enums;
 
 namespace Communication.Sample.Tests
 {

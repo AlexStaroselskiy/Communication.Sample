@@ -1,5 +1,6 @@
-﻿
-namespace Communication.Sample.Client
+﻿using Communication.Sample.Client.Enums;
+
+namespace Communication.Sample.Client.Exceptions
 {
     [Serializable]
     internal class SdrNackException : Exception

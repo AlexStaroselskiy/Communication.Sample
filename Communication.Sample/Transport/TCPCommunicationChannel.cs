@@ -18,7 +18,7 @@ public class TCPCommunicationChannel : ICommunicationChannel
         _port = 50000;
         _bufferSize = 8194;
         _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-        _serverEndpoint = new IPEndPoint(IPAddress.Any, _port);
+        _serverEndpoint = new IPEndPoint(IPAddress.Loopback, _port);
         _socket.ReceiveBufferSize = _bufferSize;
     }
 
@@ -30,7 +30,7 @@ public class TCPCommunicationChannel : ICommunicationChannel
 
     public async Task OpenAsync(CancellationToken cancellationToken)
     {
-        await _socket.ConnectAsync(_serverEndpoint, cancellationToken);
+        await _socket.ConnectAsync(_serverEndpoint,cancellationToken);
     }
 
     public async Task<byte[]> ReceiveAsync(CancellationToken cancellationToken)
@@ -39,11 +39,11 @@ public class TCPCommunicationChannel : ICommunicationChannel
         try
         {
             var segment = new ArraySegment<byte>(responseBuffer);
-            SocketReceiveMessageFromResult result = await _socket.ReceiveMessageFromAsync(segment, SocketFlags.None, _serverEndpoint, cancellationToken);
+            var result = await _socket.ReceiveAsync(segment, SocketFlags.None, cancellationToken);
 
-            Console.WriteLine($"Received: {Encoding.ASCII.GetString(responseBuffer, 0, result.ReceivedBytes)}");
+            Console.WriteLine($"Received: {Encoding.ASCII.GetString(responseBuffer, 0, result)}");
 
-            return responseBuffer.AsSpan(0, result.ReceivedBytes).ToArray();
+            return segment.ToArray();
         }
         finally
         {
@@ -54,6 +54,6 @@ public class TCPCommunicationChannel : ICommunicationChannel
     public async Task SendAsync(byte[] data, CancellationToken cancellationToken)
     {
         // Send message
-        await _socket.SendToAsync(data, SocketFlags.None, _serverEndpoint, cancellationToken);
+        await _socket.SendAsync(data, SocketFlags.None, cancellationToken);
     }
 }
