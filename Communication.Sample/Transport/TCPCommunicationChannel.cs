@@ -27,8 +27,6 @@ public class TCPCommunicationChannel : ICommunicationChannel
     {
         _socket.Shutdown(SocketShutdown.Both);
         _socket.Close();
-
-        await Task.CompletedTask;
     }
 
     public async Task OpenAsync(CancellationToken cancellationToken)
@@ -41,12 +39,10 @@ public class TCPCommunicationChannel : ICommunicationChannel
         byte[] responseBuffer = ArrayPool<byte>.Shared.Rent(_bufferSize);
         try
         {
-            var segment = new ArraySegment<byte>(responseBuffer);
+            var segment = new Memory<byte>(responseBuffer);
             var result = await _socket.ReceiveAsync(segment, SocketFlags.None, cancellationToken);
 
-            Console.WriteLine($"Received: {Encoding.ASCII.GetString(responseBuffer, 0, result)}");
-
-            return segment.ToArray();
+            return segment.Slice(0, result).ToArray();
         }
         finally
         {

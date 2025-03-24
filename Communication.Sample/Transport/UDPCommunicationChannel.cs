@@ -27,7 +27,6 @@ public class UDPCommunicationChannel : ICommunicationChannel
     {
         _socket.Shutdown(SocketShutdown.Both);
         _socket.Close();
-        await Task.CompletedTask;
     }
 
     public async Task OpenAsync(CancellationToken cancellationToken)
@@ -40,12 +39,12 @@ public class UDPCommunicationChannel : ICommunicationChannel
         byte[] responseBuffer = ArrayPool<byte>.Shared.Rent(_bufferSize);
         try
         {
-            var segment = new ArraySegment<byte>(responseBuffer);
+            var segment = new Memory<byte>(responseBuffer);
             SocketReceiveMessageFromResult result = await _socket.ReceiveMessageFromAsync(segment, SocketFlags.None, _serverEndpoint, cancellationToken);
 
-            Console.WriteLine($"Received: {Encoding.ASCII.GetString(responseBuffer, 0, result.ReceivedBytes)}");
+        
 
-            return responseBuffer.AsSpan(0, result.ReceivedBytes).ToArray();
+            return segment.Slice(0, result.ReceivedBytes).ToArray();
         }
         finally
         {
