@@ -196,9 +196,9 @@ public class SdrClient : ISdrClient, IDisposable
             // if we going to start the transfer we need to start the data channel processing
             _dataChannelProcessingTask = Task.Factory.StartNew(action: () =>
             {
-                while (!cancellationToken.IsCancellationRequested)
+                while (_dataChannelCancelationTokenSource.IsCancellationRequested)
                 {
-                    ReceiveData(cancellationToken).Wait();
+                    ReceiveData(_dataChannelCancelationTokenSource.Token).Wait();
                 }
             }, cancellationToken);
 
