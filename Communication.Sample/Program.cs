@@ -31,3 +31,5 @@ void Client_Data0Received(object? sender, byte[] e)
     using var file = new FileStream(iqFileName, FileMode.Append,  FileAccess.Write);
     file.Write(e, 0, e.Length);
 }
+await client.CloseAsync(CancellationToken.None);
+client.Dispose();
