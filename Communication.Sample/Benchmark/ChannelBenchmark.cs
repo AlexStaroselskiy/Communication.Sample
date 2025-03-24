@@ -4,7 +4,7 @@ using Communication.Sample.Transport;
 
 namespace Communication.Sample.Benchmark
 {
-   public class ChannelBenchmark
+    public class ChannelBenchmark
     {
         private const string Message = "BenchmarkTest";
         private readonly byte[] _data = Encoding.UTF8.GetBytes(Message);
@@ -25,12 +25,14 @@ namespace Communication.Sample.Benchmark
         public async Task SendTcpAsync()
         {
             await _tcpClient.SendAsync(_data, default);
+            _ = await _tcpClient.ReceiveAsync(default);
         }
 
         [Benchmark]
         public async Task SendUdpAsync()
         {
             await _udpClient.SendAsync(_data, default);
+            _ = await _udpClient.ReceiveAsync(default);
         }
 
         [GlobalCleanup]
