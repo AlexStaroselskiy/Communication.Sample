@@ -1,9 +1,12 @@
-﻿// See https://aka.ms/new-console-template for more information
-
+﻿using BenchmarkDotNet.Running;
+using Communication.Sample.Benchmark;
 using Communication.Sample.Client;
 using Communication.Sample.Client.Enums;
 using Communication.Sample.Transport;
-using System.IO;
+
+var summary = BenchmarkRunner.Run<ChannelBenchmark>();
+
+Console.ReadKey();
 
 const string iqFileName = "somefile.iq";
 
@@ -17,6 +20,7 @@ else
 }
 
 var client = new SdrClient(new TCPCommunicationChannel(),new UDPCommunicationChannel());
+
 client.Data0Received += Client_Data0Received;
 
 await client.OpenAsync(cancellationToken: CancellationToken.None);
