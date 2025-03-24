@@ -22,24 +22,27 @@ public class SDRDeviceHost
     public async Task Start()
     {
         _socket.Bind(new IPEndPoint(IPAddress.Any, _port));
-        Console.WriteLine("TCP Server is running...");
+        Console.WriteLine("[TCP] Server is running...");
         _socket.Listen(10);
 
         while (true)
         {
             var socket = await _socket.AcceptAsync();
-            Console.WriteLine("Client Connected!");
+            Console.WriteLine("[TCP] Client Connected!");
             while (socket.Connected)
             {
 
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(_bufferSize);
                 try
                 {
-                    var segment = new ArraySegment<byte>(buffer);
+                    var segment = new Memory<byte>(buffer);
                     var result = await socket.ReceiveAsync(segment, SocketFlags.None);
-
+                    if(result == 0)
+                    {
+                        break;
+                    }
                     // Process in a separate task (non-blocking)
-                    _ = Task.Run(() => ProcessPacket(socket, new ArraySegment<byte>(buffer, 0, result).ToArray()));
+                    _ = Task.Run(() => ProcessPacket(socket, segment.Slice(0, result).ToArray()));
                 }
                 finally
                 {
@@ -51,7 +54,7 @@ public class SDRDeviceHost
 
     private static void ProcessPacket(Socket socket, Span<byte> arraySegment)
     {
-        Console.WriteLine($"Received {arraySegment.Length} bytes");
+        Console.WriteLine($"[TCP] Received {arraySegment.Length} bytes");
         socket.Send(arraySegment);
     }
 

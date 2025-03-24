@@ -17,41 +17,37 @@ public class SDRUDPDeviceHost
         _bufferSize = 8194;
         _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         _socket.ReceiveBufferSize = _bufferSize;
+        _socket.Bind(new IPEndPoint(IPAddress.Loopback, _port));
     }
 
     public async Task Start()
     {
-        _socket.Bind(new IPEndPoint(IPAddress.Any, _port));
-        Console.WriteLine("UDP Server is running...");
-        _socket.Listen(10);
+                    EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+        Console.WriteLine("[UDP] Server is running...");
 
         while (true)
         {
-            var socket = await _socket.AcceptAsync();
-            Console.WriteLine("Client Connected!");
-            while (socket.Connected)
-            {
+
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(_bufferSize);
                 try
                 {
-                    var segment = new ArraySegment<byte>(buffer);
-                    var result = await socket.ReceiveAsync(segment, SocketFlags.None);
+                    var segment = new Memory<byte>(buffer);
+                    var result = await _socket.ReceiveFromAsync(segment, SocketFlags.None, remoteEndPoint);
 
                     // Process in a separate task (non-blocking)
-                    _ = Task.Run(() => ProcessPacket(socket, new ArraySegment<byte>(buffer, 0, result).ToArray()));
+                    ProcessPacket(result.RemoteEndPoint, segment.Slice(0, result.ReceivedBytes).Span);
                 }
                 finally
                 {
                     ArrayPool<byte>.Shared.Return(buffer);
                 }
-            }
         }
     }
 
-    private static void ProcessPacket(Socket socket, Span<byte> arraySegment)
+    private  void ProcessPacket(EndPoint remoteEndPoint, Span<byte> arraySegment)
     {
-        Console.WriteLine($"Received {arraySegment.Length} bytes");
-        socket.Send(arraySegment);
+        Console.WriteLine($"[UDP] Received {arraySegment.Length} bytes");
+        _socket.SendTo(arraySegment,remoteEndPoint);
     }
 
     public void Stop()
