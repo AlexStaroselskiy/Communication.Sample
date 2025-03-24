@@ -12,6 +12,7 @@ public class TCPCommunicationChannel : ICommunicationChannel
     private readonly int _port;
     private readonly IPEndPoint _serverEndpoint;
     private readonly Socket _socket;
+    private bool _disposed;
 
     public TCPCommunicationChannel()
     {
@@ -26,11 +27,13 @@ public class TCPCommunicationChannel : ICommunicationChannel
     {
         _socket.Shutdown(SocketShutdown.Both);
         _socket.Close();
+
+        await Task.CompletedTask;
     }
 
     public async Task OpenAsync(CancellationToken cancellationToken)
     {
-        await _socket.ConnectAsync(_serverEndpoint,cancellationToken);
+        await _socket.ConnectAsync(_serverEndpoint, cancellationToken);
     }
 
     public async Task<byte[]> ReceiveAsync(CancellationToken cancellationToken)
@@ -55,5 +58,25 @@ public class TCPCommunicationChannel : ICommunicationChannel
     {
         // Send message
         await _socket.SendAsync(data, SocketFlags.None, cancellationToken);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _socket.Dispose();
+            }
+
+            _disposed = true;
+        }
+    }
+
+
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }

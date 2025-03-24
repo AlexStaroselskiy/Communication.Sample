@@ -1,6 +1,6 @@
 ﻿namespace Communication.Sample.Transport.Interface;
 
-public interface ICommunicationChannel
+public interface ICommunicationChannel: IDisposable
 {
     Task OpenAsync(CancellationToken cancellationToken);
     Task CloseAsync(CancellationToken cancellationToken);

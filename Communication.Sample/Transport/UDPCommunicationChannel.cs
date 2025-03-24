@@ -12,6 +12,7 @@ public class UDPCommunicationChannel : ICommunicationChannel
     private readonly int _port;
     private readonly IPEndPoint _serverEndpoint;
     private readonly Socket _socket;
+    private bool _disposed;
 
     public UDPCommunicationChannel()
     {
@@ -26,6 +27,7 @@ public class UDPCommunicationChannel : ICommunicationChannel
     {
         _socket.Shutdown(SocketShutdown.Both);
         _socket.Close();
+        await Task.CompletedTask;
     }
 
     public async Task OpenAsync(CancellationToken cancellationToken)
@@ -55,5 +57,23 @@ public class UDPCommunicationChannel : ICommunicationChannel
     {
         // Send message
         await _socket.SendToAsync(data, SocketFlags.None, _serverEndpoint, cancellationToken);
+    }
+
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _socket.Dispose();
+            }
+            _disposed = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
     }
 }

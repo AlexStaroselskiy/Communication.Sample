@@ -3,21 +3,22 @@ using Communication.Sample.Client.Exceptions;
 using Communication.Sample.Client.Interface;
 using Communication.Sample.Client.Tools;
 using Communication.Sample.Transport.Interface;
-using System;
 
 namespace Communication.Sample.Client;
 
-public class SdrClient : ISdrClient
+public class SdrClient : ISdrClient, IDisposable
 {
     private readonly ICommunicationChannel _dataChannel;
     private readonly CancellationTokenSource _dataChannelCancelationTokenSource;
     private ICommunicationChannel _controlChannel;
     private Task? _dataChannelProcessingTask;
     private bool _isConnected;
-    public SdrClient(ICommunicationChannel controlChannel, ICommunicationChannel DataChannel)
+    private bool _disposed = false;
+
+    public SdrClient(ICommunicationChannel controlChannel, ICommunicationChannel dataChannel)
     {
         _controlChannel = controlChannel;
-        _dataChannel = DataChannel;
+        _dataChannel = dataChannel;
         _dataChannelCancelationTokenSource = new CancellationTokenSource();
     }
 
@@ -51,10 +52,12 @@ public class SdrClient : ISdrClient
             await _dataChannelProcessingTask.WaitAsync(cancellationToken);
         }
 
+        await _dataChannel.CloseAsync(cancellationToken);
+
         _isConnected = false;
     }
 
-    public async Task<Int64> GetReceiverFrequency(ReceiverChannel channel, CancellationToken cancellationToken)
+    public async Task<long> GetReceiverFrequency(ReceiverChannel channel, CancellationToken cancellationToken)
     {
         VerifyConnected();
 
@@ -75,11 +78,11 @@ public class SdrClient : ISdrClient
         {
             var frequency = new ArraySegment<byte>(message, 5, 5);
 
-            return BitConverter.ToInt64([..frequency,0,0,0]);
+            return BitConverter.ToInt64([.. frequency, 0, 0, 0]);
         }, cancellationToken);
     }
 
-    public async Task<Dictionary<ReceiverChannel, (Int64 min, Int64 max, Int64 vco)>> GetReceiverFrequencyRanges(CancellationToken cancellationToken)
+    public async Task<Dictionary<ReceiverChannel, (long min, long max, long vco)>> GetReceiverFrequencyRanges(CancellationToken cancellationToken)
     {
         VerifyConnected();
         var sdrCommand = SdrCommand.SetReceiverFrequency;
@@ -93,7 +96,7 @@ public class SdrClient : ISdrClient
 
         return await Dispatch(sdrCommand, command, message =>
         {
-      
+
             // 2 header + 2 command + 1 channel id +1 channelid
             var frequency1 = ParseFrequencyRange(new ArraySegment<byte>(message, 6, 15));
             var frequency2 = ParseFrequencyRange(new ArraySegment<byte>(message, 21, 15));
@@ -109,6 +112,7 @@ public class SdrClient : ISdrClient
     public async Task OpenAsync(CancellationToken cancellationToken)
     {
         await _controlChannel.OpenAsync(cancellationToken);
+        await _dataChannel.OpenAsync(cancellationToken);
         _isConnected = true;
     }
 
@@ -197,9 +201,10 @@ public class SdrClient : ISdrClient
                     ReceiveData(cancellationToken).Wait();
                 }
             }, cancellationToken);
-            
+
         }
-        else
+
+        if (transferOption == TransferOption.Stop && _dataChannelProcessingTask != null)
         {
             // if we going to stop the transfer we need to stop the data channel processing
             _dataChannelCancelationTokenSource.Cancel();
@@ -267,9 +272,9 @@ public class SdrClient : ISdrClient
         }
     }
 
-    private async Task<T> Dispatch<T>(SdrCommand sdrCommand, byte[] command, Func<byte[], T> resultresolver, CancellationToken cancellationToken)
+    private async Task<T> Dispatch<T>(SdrCommand sdrCommand, byte[] commandData, Func<byte[], T> responseHandler, CancellationToken cancellationToken)
     {
-        await _controlChannel.SendAsync(command, cancellationToken);
+        await _controlChannel.SendAsync(commandData, cancellationToken);
 
         while (!cancellationToken.IsCancellationRequested)
         {
@@ -279,7 +284,7 @@ public class SdrClient : ISdrClient
                 throw new IOException("Nothing really returned!");
             }
 
-            if (response.Length == 2)
+            if (MessageParser.GetMessageLength(response) == 2)
             {
                 throw new SdrNackException("Not supported", sdrCommand);
             }
@@ -291,8 +296,8 @@ public class SdrClient : ISdrClient
                 var data = MessageParser.GetCommandType(response);
                 if (data == sdrCommand)
                 {
-                    
-                    return resultresolver(response);
+
+                    return responseHandler(response);
                 }
 
                 if (data == SdrCommand.Error)
@@ -315,12 +320,12 @@ public class SdrClient : ISdrClient
         return default;
     }
 
-    private (Int64 min, Int64 max, Int64 vco) ParseFrequencyRange(ArraySegment<byte> data)
+    private (long min, long max, long vco) ParseFrequencyRange(ArraySegment<byte> data)
     {
         var min = data.Take(5).ToArray();
         var max = data.Skip(5).Take(5).ToArray();
         var vco = data.Skip(10).Take(5).ToArray();
-        return (BitConverter.ToInt64([..min,0,0,0]), BitConverter.ToInt64([.. max, 0, 0, 0]), BitConverter.ToInt64([.. vco, 0, 0, 0]));
+        return (BitConverter.ToInt64([.. min, 0, 0, 0]), BitConverter.ToInt64([.. max, 0, 0, 0]), BitConverter.ToInt64([.. vco, 0, 0, 0]));
     }
 
     private async Task ReceiveData(CancellationToken cancellationToken)
@@ -366,5 +371,27 @@ public class SdrClient : ISdrClient
     }
 
     private void VerifyConnected() { if (!_isConnected) throw new InvalidOperationException("Not connected to device!"); }
+    #region Dispose handling
+    protected virtual void Dispose(bool disposing)
+    {
+        if (!_disposed)
+        {
+            if (disposing)
+            {
+                _controlChannel.Dispose();
+                _dataChannel.Dispose();
+                _dataChannelCancelationTokenSource.Dispose();
+            }
 
+            _disposed = true;
+        }
+    }
+
+    public void Dispose()
+    {
+        // Do not change this code. Put cleanup code in 'Dispose(bool disposing)' method
+        Dispose(disposing: true);
+        GC.SuppressFinalize(this);
+    }
+    #endregion Dispose handling
 }
