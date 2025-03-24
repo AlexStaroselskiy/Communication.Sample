@@ -4,25 +4,25 @@ using System.Net.Sockets;
 
 namespace Communication.Target;
 
-public class SDRDeviceHost
+public class SDRUDPDeviceHost
 
 {
     private readonly int _port;
     private readonly int _bufferSize;
     private readonly Socket _socket;
 
-    public SDRDeviceHost()
+    public SDRUDPDeviceHost()
     {
-        _port = 50000;
+        _port = 60000;
         _bufferSize = 8194;
-        _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+        _socket = new Socket(AddressFamily.InterNetwork, SocketType.Dgram, ProtocolType.Udp);
         _socket.ReceiveBufferSize = _bufferSize;
     }
 
     public async Task Start()
     {
         _socket.Bind(new IPEndPoint(IPAddress.Any, _port));
-        Console.WriteLine("TCP Server is running...");
+        Console.WriteLine("UDP Server is running...");
         _socket.Listen(10);
 
         while (true)
@@ -31,7 +31,6 @@ public class SDRDeviceHost
             Console.WriteLine("Client Connected!");
             while (socket.Connected)
             {
-
                 byte[] buffer = ArrayPool<byte>.Shared.Rent(_bufferSize);
                 try
                 {

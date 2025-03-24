@@ -1,5 +1,8 @@
 ﻿// See https://aka.ms/new-console-template for more information
-using Communication.Sample.Host;
+
+using Communication.Target;
 
 var sdrDeviceHost = new SDRDeviceHost();
-await sdrDeviceHost.Start();
+var sdrUdpDeviceHost = new SDRUDPDeviceHost();
+Task.WaitAll([sdrDeviceHost.Start(),sdrUdpDeviceHost.Start()]);
+
