@@ -22,32 +22,33 @@ public class SDRUDPDeviceHost
 
     public async Task Start()
     {
-                    EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
+        EndPoint remoteEndPoint = new IPEndPoint(IPAddress.Any, 0);
         Console.WriteLine("[UDP] Server is running...");
 
         while (true)
         {
 
-                byte[] buffer = ArrayPool<byte>.Shared.Rent(_bufferSize);
-                try
-                {
-                    var segment = new Memory<byte>(buffer);
-                    var result = await _socket.ReceiveFromAsync(segment, SocketFlags.None, remoteEndPoint);
+            byte[] buffer = ArrayPool<byte>.Shared.Rent(_bufferSize);
+            try
+            {
+                var segment = new Memory<byte>(buffer);
+                var result = await _socket.ReceiveFromAsync(segment, SocketFlags.None, remoteEndPoint).ConfigureAwait(false);
 
-                    // Process in a separate task (non-blocking)
-                    ProcessPacket(result.RemoteEndPoint, segment.Slice(0, result.ReceivedBytes).Span);
-                }
-                finally
-                {
-                    ArrayPool<byte>.Shared.Return(buffer);
-                }
+                var message = segment.Slice(0, result.ReceivedBytes).ToArray();
+                // Process in a separate task (non-blocking)
+                Task.Run(() => ProcessPacket(result.RemoteEndPoint, message));
+            }
+            finally
+            {
+                ArrayPool<byte>.Shared.Return(buffer);
+            }
         }
     }
 
-    private  void ProcessPacket(EndPoint remoteEndPoint, Span<byte> arraySegment)
+    private void ProcessPacket(EndPoint remoteEndPoint, Span<byte> arraySegment)
     {
         Console.WriteLine($"[UDP] Received {arraySegment.Length} bytes");
-        _socket.SendTo(arraySegment,remoteEndPoint);
+        _socket.SendTo(arraySegment, remoteEndPoint);
     }
 
     public void Stop()

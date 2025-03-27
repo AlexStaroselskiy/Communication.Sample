@@ -23,11 +23,11 @@ public class SDRDeviceHost
     {
         _socket.Bind(new IPEndPoint(IPAddress.Any, _port));
         Console.WriteLine("[TCP] Server is running...");
-        _socket.Listen(10);
+        _socket.Listen();
 
         while (true)
         {
-            var socket = await _socket.AcceptAsync();
+            var socket = await _socket.AcceptAsync().ConfigureAwait(false);
             Console.WriteLine("[TCP] Client Connected!");
             while (socket.Connected)
             {
@@ -36,13 +36,14 @@ public class SDRDeviceHost
                 try
                 {
                     var segment = new Memory<byte>(buffer);
-                    var result = await socket.ReceiveAsync(segment, SocketFlags.None);
+                    var result = await socket.ReceiveAsync(segment, SocketFlags.None).ConfigureAwait(false);
                     if(result == 0)
                     {
                         break;
                     }
+                    var message = segment.Slice(0, result).ToArray();
                     // Process in a separate task (non-blocking)
-                    _ = Task.Run(() => ProcessPacket(socket, segment.Slice(0, result).ToArray()));
+                    Task.Run(() => ProcessPacket(socket, message));
                 }
                 finally
                 {
