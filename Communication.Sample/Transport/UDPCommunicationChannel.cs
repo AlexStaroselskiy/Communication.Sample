@@ -2,7 +2,6 @@
 using System.Buffers;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 
 namespace Communication.Sample.Transport;
 
@@ -27,11 +26,13 @@ public class UDPCommunicationChannel : ICommunicationChannel
     {
         _socket.Shutdown(SocketShutdown.Both);
         _socket.Close();
+        await Task.CompletedTask;
     }
 
     public async Task OpenAsync(CancellationToken cancellationToken)
     {
-        await _socket.ConnectAsync(_serverEndpoint, cancellationToken);
+        await _socket.ConnectAsync(_serverEndpoint, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public async Task<byte[]> ReceiveAsync(CancellationToken cancellationToken)
@@ -40,7 +41,8 @@ public class UDPCommunicationChannel : ICommunicationChannel
         try
         {
             var segment = new Memory<byte>(responseBuffer);
-            SocketReceiveMessageFromResult result = await _socket.ReceiveMessageFromAsync(segment, SocketFlags.None, _serverEndpoint, cancellationToken);
+            SocketReceiveMessageFromResult result = await _socket.ReceiveMessageFromAsync(segment, SocketFlags.None, _serverEndpoint, cancellationToken)
+                .ConfigureAwait(false);
 
         
 
@@ -55,7 +57,8 @@ public class UDPCommunicationChannel : ICommunicationChannel
     public async Task SendAsync(byte[] data, CancellationToken cancellationToken)
     {
         // Send message
-        await _socket.SendToAsync(data, SocketFlags.None, _serverEndpoint, cancellationToken);
+        await _socket.SendToAsync(data, SocketFlags.None, _serverEndpoint, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     protected virtual void Dispose(bool disposing)

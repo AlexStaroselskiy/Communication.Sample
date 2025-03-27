@@ -12,12 +12,16 @@ internal class MessageBuilder
 
     internal MessageBuilder SetCommandType(SdrCommand command)
     {
+        if (!Enum.IsDefined(typeof(SdrCommand), command)) throw new ArgumentOutOfRangeException($"{nameof(command)} must be defined");
+
         _command = command;
         return this;
     }
     internal MessageBuilder AddCommandParameter(byte[] options) { _options.Enqueue(options); return this; }
     internal MessageBuilder SetMessageType(HostMessageType messageType)
     {
+        if (!Enum.IsDefined(typeof(HostMessageType), messageType)) throw new ArgumentOutOfRangeException($"{nameof(messageType)} must be defined");
+
         _messageType = messageType;
         return this;
     }
@@ -44,7 +48,7 @@ internal class MessageBuilder
 
             var header = CalculateHeader(length, (byte)_messageType, (short)_command);
 
-            return [.. header,  .. listOptions];
+            return [.. header, .. listOptions];
         }
         else
         {
@@ -61,13 +65,13 @@ internal class MessageBuilder
         var msb = (length & 0x1f00) >> 8;
         var lsb = (byte)(length & 0xff);
         var typeMsb = (byte)(((byte)messageType << 5) | msb);
-        
-        var commandByte = command !=null? BitConverter.GetBytes((short)command) : [];
+
+        var commandByte = command != null ? BitConverter.GetBytes((short)command) : [];
 
         if (!BitConverter.IsLittleEndian)
         {
             commandByte = [.. commandByte.Reverse()];
         }
-        return  [lsb, typeMsb, ..commandByte];
+        return [lsb, typeMsb, .. commandByte];
     }
 }

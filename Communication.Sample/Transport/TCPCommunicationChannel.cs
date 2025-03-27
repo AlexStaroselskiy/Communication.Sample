@@ -31,7 +31,7 @@ public class TCPCommunicationChannel : ICommunicationChannel
 
     public async Task OpenAsync(CancellationToken cancellationToken)
     {
-        await _socket.ConnectAsync(_serverEndpoint, cancellationToken);
+        await _socket.ConnectAsync(_serverEndpoint, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<byte[]> ReceiveAsync(CancellationToken cancellationToken)
@@ -40,7 +40,7 @@ public class TCPCommunicationChannel : ICommunicationChannel
         try
         {
             var segment = new Memory<byte>(responseBuffer);
-            var result = await _socket.ReceiveAsync(segment, SocketFlags.None, cancellationToken);
+            var result = await _socket.ReceiveAsync(segment, SocketFlags.None, cancellationToken).ConfigureAwait(false);
 
             return segment.Slice(0, result).ToArray();
         }
@@ -53,7 +53,7 @@ public class TCPCommunicationChannel : ICommunicationChannel
     public async Task SendAsync(byte[] data, CancellationToken cancellationToken)
     {
         // Send message
-        await _socket.SendAsync(data, SocketFlags.None, cancellationToken);
+        await _socket.SendAsync(data, SocketFlags.None, cancellationToken).ConfigureAwait(false);
     }
 
     protected virtual void Dispose(bool disposing)
